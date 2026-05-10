@@ -42,8 +42,60 @@ async def twilio_webhook(request: Request):
 
     balance = get_balance(user_id)
 
-    if message_body.lower() == "hi":
-        reply = "Paisa track karna chahte ho?\n\nPaise kaise aate hain tere paas?\n1️⃣ Parents monthly\n2️⃣ Jab maango\n3️⃣ Scholarship"
+    # Onboarding: Ask money_type if not set
+    if user["money_type"] == "monthly" and user["monthly_budget"] == 0:
+        if message_body.lower() in ["1", "parents monthly", "monthly"]:
+            # Update user money_type
+            from supabase import create_client, Client
+            SUPABASE_URL = os.getenv("SUPABASE_URL")
+            SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+            supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+            
+            supabase.table("users").update({
+                "money_type": "monthly",
+                "monthly_budget": 0
+            }).eq("id", user_id).execute()
+            
+            reply = "Theek hai! 💰\n\nAb batao — har month kitna milta hai?\n\nExample: 5000"
+            send_whatsapp_message(user_phone, reply)
+        
+        elif message_body.lower() in ["2", "jab maango", "on-demand"]:
+            from supabase import create_client, Client
+            SUPABASE_URL = os.getenv("SUPABASE_URL")
+            SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+            supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+            
+            supabase.table("users").update({
+                "money_type": "on_demand"
+            }).eq("id", user_id).execute()
+            
+            reply = "Gotcha! 📱\n\nJab paisa track karna ho:\n- 'Hi' type karo\n- Expense bata (e.g., '180 ka swiggy')"
+            send_whatsapp_message(user_phone, reply)
+        
+        elif message_body.lower() in ["3", "scholarship"]:
+            from supabase import create_client, Client
+            SUPABASE_URL = os.getenv("SUPABASE_URL")
+            SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+            supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+            
+            supabase.table("users").update({
+                "money_type": "scholarship"
+            }).eq("id", user_id).execute()
+            
+            reply = "Nice! 🎓\n\nAb expense track karte hain.\nBatao — kya kharch kiya?"
+            send_whatsapp_message(user_phone, reply)
+        
+        elif message_body.lower() == "hi":
+            reply = "Paisa track karna chahte ho?\n\nPaise kaise aate hain tere paas?\n1️⃣ Parents monthly\n2️⃣ Jab maango\n3️⃣ Scholarship"
+            send_whatsapp_message(user_phone, reply)
+        
+        else:
+            reply = "Samajh nahi aaya! 🤔\n\nKya hai tera income source?\n1️⃣ Parents monthly\n2️⃣ Jab maango\n3️⃣ Scholarship"
+            send_whatsapp_message(user_phone, reply)
+    
+    # Regular usage
+    elif message_body.lower() == "hi":
+        reply = f"Yo! 👋\n\n₹{balance} bacha hai.\n\nKya kharcha kiya?"
         send_whatsapp_message(user_phone, reply)
 
     elif message_body.lower() in ["kitna bacha hai", "balance", "bata"]:
